@@ -1,0 +1,132 @@
+#!/usr/bin/python3
+
+import sys, getopt, os
+
+def main():
+	version={
+		"2.4.4":{
+			"composer":"2",
+			"php":"8.1",
+			"mariadb":"10.4",
+			"elasticsearch":"7.16",
+			"twofactor":"1"
+		},
+		"2.4.3": {
+			"composer":"1",
+			"php":"7.4",
+			"mariadb":"10.4",
+			"elasticsearch":"7.10",
+			"twofactor":"1"
+		},
+		"2.4.2": {
+			"composer":"1",
+			"php":"7.4",
+			"mariadb":"10.4",
+			"elasticsearch":"7.9",
+			"twofactor":"1"
+		},
+		"2.4.1": {
+			"composer":"1",
+			"php":"7.4",
+			"mariadb":"10.4",
+		},
+		"2.3.7": {
+			"composer":"1",
+			"php":"7.4",
+			"mariadb":"10.3",
+		},
+		"2.3.6": {
+			"composer":"1",
+			"php":"7.3",
+			"mariadb":"10.2",
+		},
+		"2.3.5": {
+			"composer":"1",
+			"php":"7.2",
+			"mariadb":"10.2",
+		},
+		"2.3.4": {
+			"composer":"1",
+			"php":"7.3",
+			"mariadb":"10.1",
+		},
+		"2.3.3": {
+			"composer":"1",
+			"php":"7.3",
+			"mariadb":"10.1",
+		},
+		"2.3.2": {
+			"composer":"1",
+			"php":"7.2",
+			"mariadb":"10.1",
+		},
+		"2.3.1": {
+			"composer":"1",
+			"php":"7.2",
+			"mariadb":"10.1",
+		},
+		"2.3.0": {
+			"composer":"1",
+			"php":"7.2",
+			"mariadb":"10.1",
+		},
+		"2.1.1": {
+			"composer":"1",
+			"php":"7.0",
+			"mariadb":"10.4",
+		}
+	}
+	try:
+		opts, args = getopt.getopt(sys.argv[1:],"hd:m:",["domain=","magento-version="])
+	except getopt.GetoptError:
+		print ('Use install -domain= -magento-version')
+		sys.exit(2)
+	for opt, arg in opts:
+		if opt in ("-d","--domain"):
+			domain = arg
+		elif opt in ("-m","--magento-version"):
+			magentoVersion = arg
+	os.mkdir(domain)
+	os.chdir(domain)
+	os.system(f"warden env-init {domain} magento2")
+	php = version[magentoVersion]["php"]
+	#change to php version
+	command=f"sed -i '' 's/PHP_VERSION=7.4/PHP_VERSION={php}/g' .env"
+	os.system(command)
+	#change the composer version
+	composer = version[magentoVersion]["composer"]
+	command=f"sed -i '' 's/COMPOSER_VERSION=1/COMPOSER_VERSION={composer}/g' .env"
+	os.system(command)
+	#change the mariadb version
+	mariadb = version[magentoVersion]["mariadb"]
+	command=f"sed -i '' 's/MARIADB_VERSION=10.3/MARIADB_VERSION={mariadb}/g' .env"
+	os.system(command)
+	#disable rabit
+	command=f"sed -i '' 's/WARDEN_RABBITMQ=1/WARDEN_RABBITMQ=0/g' .env"
+	os.system(command)
+	#disable varnish
+	command=f"sed -i '' 's/WARDEN_VARNISH=1/WARDEN_VARNISH=0/g' .env"
+	os.system(command)	
+	command="cp ~/.warden/installmagento.sh ."
+	os.system(command)
+	command=f"sed -i '' 's/magentoversion/{magentoVersion}/g' installmagento.sh"
+	os.system(command)
+	if "elasticsearch" in version[magentoVersion]:
+		elasticsearch = version[magentoVersion]["elasticsearch"]
+		command=f"sed -i '' 's/ELASTICSEARCH_VERSION=7.6/ELASTICSEARCH_VERSION={elasticsearch}/g' .env"
+		os.system(command)
+		command=f"sed -i '' 's/page-cache-redis-port=6379/page-cache-redis-port=6379 --elasticsearch-host=elasticsearch --elasticsearch-port=9200/g' installmagento.sh"
+		os.system(command)
+	else:
+		command=f"sed -i '' 's/WARDEN_ELASTICSEARCH=1/WARDEN_ELASTICSEARCH=0/g' .env"
+		os.system(command)	
+	if "twofactor" in version[magentoVersion]:
+		command=f"sed -i '' 's/bin\/magento cache:flush/bin\/magento module:disable Magento_TwoFactorAuth\\nbin\/magento cache:flush/g' installmagento.sh"
+		os.system(command)
+	command=f"warden sign-certificate {domain}.test"
+	os.system(command)
+	os.system("warden env up")
+
+if __name__ == "__main__":
+	main() 
+
