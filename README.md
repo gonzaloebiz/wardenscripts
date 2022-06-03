@@ -2,7 +2,7 @@
 
 ## Install
 
-- You must first install warden
+- You must first install warden https://docs.warden.dev/installing.html
 - Create a directory
 - Copy the installmagento python script to this directory
 - Copy the installmagento.sh script to the ~/.warden
