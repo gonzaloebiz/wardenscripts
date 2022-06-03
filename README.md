@@ -9,7 +9,7 @@
 
 ## Pre use
 
-- Warden will use you .composer/auth.json so put your marketplace credential
+- Warden will use you .composer/auth.json so put your marketplace credentials
 - the warden container must be running, so run **warden svc up**
 
 ## Create a new magento2 container
